@@ -20,13 +20,11 @@ def get_events(city):
 
     events_list = []
 
-    # Ticketmaster returns events under _embedded → events[]
     if "_embedded" in response and "events" in response["_embedded"]:
         for event in response["_embedded"]["events"]:
             events_list.append({
                 "name": event.get("name", "Unknown Event"),
                 "popularity": event.get("promoter", {}).get("name", "Medium"),
-                # We keep distance simple (or you can calculate using lat/long later)
                 "distance_km": 2.0  
             })
 
