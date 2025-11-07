@@ -1,6 +1,14 @@
 import requests
+import os
+from dotenv import load_dotenv
 
-API_KEY = "oJ7OFAFv62FsClDLwGnGyLSFkahMZsLm"
+load_dotenv()
+
+API_KEY = os.getenv("EVENT_API_KEY")
+
+if not API_KEY:
+    raise ValueError("EVENT_API_KEY not found in environment variables")
+
 def get_events(city):
     """
     Fetch event data from Ticketmaster for a given city.

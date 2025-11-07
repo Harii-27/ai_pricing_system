@@ -1,62 +1,74 @@
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from types import SimpleNamespace
-
+from typing import Optional, List
 from pricing_logic import calculate_recommended_price
-from external_services.weather_api import get_weather
-from external_services.event_api import get_events
+from sqlalchemy.orm import Session
 from database import get_db
 from models import PriceHistory
+from external_services.weather_api import get_weather
+from external_services.event_api import get_events
+from types import SimpleNamespace
+
+app = FastAPI(title="AI Menu Pricing API", description="Recommends menu prices based on internal & external factors")
 
 
-app = FastAPI(
-    title="AI Menu Pricing API",
-    description="Recommends menu prices based on internal & external factors"
-)
+class Weather(BaseModel):
+    temperature: float
+    condition: str
 
-
-# ----------- Request Body Model -----------
+class Event(BaseModel):
+    name: str
+    popularity: str
+    distance_km: float
 
 class PriceRequest(BaseModel):
     menu_item_id: int
     current_price: float
-    competitor_prices: list[float]
-    city: str   # ✅ We only ask for city, not weather or events manually
+    competitor_prices: List[float]
+    city: Optional[str] = None              
+    weather: Optional[Weather] = None       
+    events: Optional[List[Event]] = None    
 
 
-# ----------- API Endpoint -----------
+def convert(obj):
+    if isinstance(obj, dict):
+        return SimpleNamespace(**{k: convert(v) for k, v in obj.items()})
+    if isinstance(obj, list):
+        return [convert(i) for i in obj]
+    return obj
 
+
+# API Endpoint 
 @app.post("/api/pricing/suggest")
 def suggest_price(data: PriceRequest, db: Session = Depends(get_db)):
+    
+    if data.city:
+        weather_data = get_weather(data.city)
+        event_data = get_events(data.city)
 
-    # ✅ Fetch external data automatically
-    weather_data = get_weather(data.city)
-    event_data = get_events(data.city)
+    else:
+        weather_data = data.weather
+        event_data = data.events
 
-    # ✅ Format data for pricing logic
-    simple_data = {
-        "menu_item_id": data.menu_item_id,
-        "current_price": data.current_price,
-        "competitor_prices": data.competitor_prices,
-        "weather": weather_data,
-        "events": event_data
-    }
-
-    recommended_price, factors, reasoning = calculate_recommended_price(
-        SimpleNamespace(**simple_data)
+    formatted = SimpleNamespace(
+        menu_item_id=data.menu_item_id,
+        current_price=data.current_price,
+        competitor_prices=data.competitor_prices,
+        weather=convert(weather_data),
+        events=convert(event_data)
     )
 
-    # ✅ Save the result in PostgreSQL
-    record = PriceHistory(
+    recommended_price, factors, reasoning = calculate_recommended_price(formatted)
+
+    history = PriceHistory(
         menu_item_id=data.menu_item_id,
         recommended_price=recommended_price,
         reasoning=reasoning
     )
-    db.add(record)
+    db.add(history)
     db.commit()
+    db.refresh(history)
 
-    # ✅ Response
     return {
         "menu_item_id": data.menu_item_id,
         "recommended_price": recommended_price,
