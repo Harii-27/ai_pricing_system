@@ -14,8 +14,10 @@ ai_pricing_system/
 ## Create .env File
 Create a file named `.env` in the project folder and add:
 
-WEATHER_API_KEY= YOUR API KEY
-EVENT_API_KEY= YOUR API KEY
+WEATHER_API_KEY= YOUR API KEY,
+
+EVENT_API_KEY= YOUR API KEY,
+
 DATABASE_URL= ENTER YOUR DB DETAILS
 
 ## How to Run
