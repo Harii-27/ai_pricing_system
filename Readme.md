@@ -3,20 +3,23 @@
 ## Project Structure
 ai_pricing_system/
 ├── main.py                → API endpoint
-├── pricing_logic.py       → Price calculation logic (AI model behavior)
+├── pricing_logic.py       → AI-powered price calculation using OpenAI LLM
 ├── database.py            → PostgreSQL connection settings
 ├── models.py              → Database table for storing pricing history
 ├── init_db.py             → Creates database tables
 └── external_services/
       ├── weather_api.py   → Fetches weather data
-      └── event_api.py     → Fetches event data
+      ├── event_api.py     → Fetches event data
+      └── ai_pricing.py    → AI-powered price reasoning using OpenAI LLM
 
 ## Create .env File
 Create a file named `.env` in the project folder and add:
 
-WEATHER_API_KEY= YOUR API KEY,
+WEATHER_API_KEY= YOUR API KEY
 
-EVENT_API_KEY= YOUR API KEY,
+EVENT_API_KEY= YOUR API KEY
+
+OPENAI_API_KEY= YOUR OPENAI API KEY
 
 DATABASE_URL= ENTER YOUR DB DETAILS
 
@@ -62,11 +65,12 @@ DATABASE_URL= ENTER YOUR DB DETAILS
 
 ## Example Response
 {
-  "menu_item_id": 101,
-  "recommended_price": 272.55,
+  "menu_item_id": 123,
+  "recommended_price": 275.50,
   "factors": {
     "internal_weight": 0.6,
-    "external_weight": 0.4
+    "external_weight": 0.4,
+    "ai_model_used": "OpenAI GPT-5-nano"
   },
-  "reasoning": "Warm weather and nearby event increased demand."
+  "reasoning": "Hot weather and nearby high-popularity event increase demand. Recommended 10% price increase."
 }
